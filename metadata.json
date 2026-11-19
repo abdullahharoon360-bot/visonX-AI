@@ -1,0 +1,6 @@
+{
+  "name": "VisionX AI",
+  "description": "Intelligent Security & Identity Intelligence Platform combining computer vision, multimodal biometric verification, deterministic risk assessment, and AI-assisted investigation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

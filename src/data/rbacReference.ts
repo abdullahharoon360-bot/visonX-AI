@@ -1,0 +1,211 @@
+import type { PermissionDefinition, RoleDefinition } from '@/src/types/foundation';
+
+export interface PlatformModuleSpec {
+  id: string;
+  title: string;
+  path: string;
+  phase: number;
+  status: 'implemented' | 'planned';
+  summary: string;
+  backendBoundary: string;
+}
+
+export const PLATFORM_MODULES: ReadonlyArray<PlatformModuleSpec> = [
+  {
+    id: 'command-center',
+    title: 'Command Center',
+    path: '/command-center',
+    phase: 1,
+    status: 'implemented',
+    summary: 'Foundation readiness, active organization context, RBAC posture, and live Firestore connection checks.',
+    backendBoundary: 'Firebase Auth · Cloud Firestore (ai-studio-visionxai)',
+  },
+  {
+    id: 'live-monitoring',
+    title: 'Live Monitoring',
+    path: '/live-monitoring',
+    phase: 3,
+    status: 'planned',
+    summary: 'Real-time camera streams, CV bounding-box overlays, and tracking telemetry.',
+    backendBoundary: 'Phase 3/4 · Stream Worker & CV Pipeline',
+  },
+  {
+    id: 'cameras',
+    title: 'Cameras',
+    path: '/cameras',
+    phase: 3,
+    status: 'planned',
+    summary: 'ONVIF/RTSP/USB camera registry, credential vaulting, SSRF-safe stream diagnostics, and health.',
+    backendBoundary: 'Phase 3 · /api/v1/cameras',
+  },
+  {
+    id: 'video-intelligence',
+    title: 'Video Intelligence',
+    path: '/video-intelligence',
+    phase: 4,
+    status: 'planned',
+    summary: 'Asynchronous video upload jobs, frame sampling, object tracking timelines, quality metrics, and ALPR adapters.',
+    backendBoundary: 'Phase 4 · /api/v1/video-jobs',
+  },
+  {
+    id: 'identity',
+    title: 'Identity & Access',
+    path: '/identity',
+    phase: 5,
+    status: 'planned',
+    summary: 'Encrypted biometric enrollment, face/voice/fingerprint adapters, liveness heuristics, and multimodal fusion.',
+    backendBoundary: 'Phase 5 · /api/v1/identities & /verifications',
+  },
+  {
+    id: 'incidents',
+    title: 'Security Incidents',
+    path: '/incidents',
+    phase: 6,
+    status: 'planned',
+    summary: 'Incident triage, deterministic risk scoring, checkpoint correlation, and resolution timelines.',
+    backendBoundary: 'Phase 6 · /api/v1/incidents',
+  },
+  {
+    id: 'threat-intelligence',
+    title: 'Threat Intelligence',
+    path: '/threat-intelligence',
+    phase: 6,
+    status: 'planned',
+    summary: 'Versioned security event stream, deterministic risk factor engine, and anomaly correlation.',
+    backendBoundary: 'Phase 6 · /api/v1/events & /risk-assessments',
+  },
+  {
+    id: 'ai-analyst',
+    title: 'AI Security Analyst',
+    path: '/ai-analyst',
+    phase: 7,
+    status: 'planned',
+    summary: 'Evidence-grounded Gemini investigation assistant operating strictly over authorized records.',
+    backendBoundary: 'Phase 7 · /api/v1/analyst (Server-side Gemini)',
+  },
+  {
+    id: 'investigations',
+    title: 'Investigation Center',
+    path: '/investigations',
+    phase: 8,
+    status: 'planned',
+    summary: 'Digital evidence preservation, SHA-256 integrity verification, and chain-of-custody records.',
+    backendBoundary: 'Phase 8 · /api/v1/evidence',
+  },
+  {
+    id: 'research-lab',
+    title: 'Research Lab',
+    path: '/research-lab',
+    phase: 8,
+    status: 'planned',
+    summary: 'Labeled biometric & vision benchmark metrics (FAR, FRR, TAR, EER, ROC/AUC) and inference latency.',
+    backendBoundary: 'Phase 8 · /api/v1/benchmarks',
+  },
+  {
+    id: 'reports',
+    title: 'Reports',
+    path: '/reports',
+    phase: 8,
+    status: 'planned',
+    summary: 'Exportable operational, compliance, and forensic investigation summaries.',
+    backendBoundary: 'Phase 8 · /api/v1/reports',
+  },
+  {
+    id: 'admin',
+    title: 'Administration',
+    path: '/admin',
+    phase: 1,
+    status: 'implemented',
+    summary: 'Organizations, member access, invitations, RBAC permission matrix, security settings, and audit logs.',
+    backendBoundary: 'Phase 1 · Cloud Firestore & Security Rules',
+  },
+];
+
+export const REFERENCE_ROLES: ReadonlyArray<RoleDefinition> = [
+  {
+    id: 'ref-super-admin',
+    key: 'super_admin',
+    name: 'Super Admin',
+    description: 'Full platform governance, security policy, and cross-module administration.',
+    hierarchy_level: 100,
+    is_system: true,
+    permissions: [
+      'org:read', 'org:update', 'members:read', 'members:invite', 'members:manage',
+      'roles:read', 'audit:read', 'settings:read', 'settings:update',
+      'command_center:read', 'cameras:read', 'cameras:manage', 'vision:read',
+      'identity:verify', 'identity:enroll', 'incidents:read', 'incidents:manage',
+      'analyst:query', 'evidence:read', 'reports:export',
+    ],
+  },
+  {
+    id: 'ref-admin',
+    key: 'admin',
+    name: 'Administrator',
+    description: 'Organization management, member invitations, RBAC assignment, and system configuration.',
+    hierarchy_level: 80,
+    is_system: true,
+    permissions: [
+      'org:read', 'org:update', 'members:read', 'members:invite', 'members:manage',
+      'roles:read', 'audit:read', 'settings:read', 'settings:update',
+      'command_center:read', 'cameras:read', 'cameras:manage', 'vision:read',
+      'incidents:read', 'reports:export',
+    ],
+  },
+  {
+    id: 'ref-analyst',
+    key: 'security_analyst',
+    name: 'Security Analyst',
+    description: 'Investigations, incident triage, AI Security Analyst, evidence review, and analytics.',
+    hierarchy_level: 60,
+    is_system: true,
+    permissions: [
+      'org:read', 'members:read', 'roles:read', 'audit:read', 'command_center:read',
+      'cameras:read', 'vision:read', 'incidents:read', 'incidents:manage',
+      'analyst:query', 'evidence:read', 'reports:export',
+    ],
+  },
+  {
+    id: 'ref-operator',
+    key: 'operator',
+    name: 'Operator',
+    description: 'Live monitoring, camera checks, checkpoint verification initiation, and incident reporting.',
+    hierarchy_level: 40,
+    is_system: true,
+    permissions: [
+      'org:read', 'roles:read', 'command_center:read', 'cameras:read',
+      'vision:read', 'identity:verify', 'incidents:read',
+    ],
+  },
+  {
+    id: 'ref-viewer',
+    key: 'viewer',
+    name: 'Viewer',
+    description: 'Read-only access to authorized dashboards and published reports.',
+    hierarchy_level: 20,
+    is_system: true,
+    permissions: ['org:read', 'roles:read', 'command_center:read', 'cameras:read', 'incidents:read'],
+  },
+];
+
+export const REFERENCE_PERMISSIONS: ReadonlyArray<PermissionDefinition> = [
+  { id: 'p-1', key: 'org:read', module: 'administration', description: 'View organization metadata and workspace summary' },
+  { id: 'p-2', key: 'org:update', module: 'administration', description: 'Modify organization profile and workspace settings' },
+  { id: 'p-3', key: 'members:read', module: 'administration', description: 'View organization members and pending invitations' },
+  { id: 'p-4', key: 'members:invite', module: 'administration', description: 'Invite new users to the organization' },
+  { id: 'p-5', key: 'members:manage', module: 'administration', description: 'Modify member roles or suspend organization access' },
+  { id: 'p-6', key: 'roles:read', module: 'administration', description: 'Inspect role definitions and permission matrix' },
+  { id: 'p-7', key: 'audit:read', module: 'administration', description: 'Query organization audit log trail' },
+  { id: 'p-8', key: 'settings:read', module: 'administration', description: 'View organization security and retention settings' },
+  { id: 'p-9', key: 'settings:update', module: 'administration', description: 'Update session timeouts, MFA policies, and retention settings' },
+  { id: 'p-10', key: 'command_center:read', module: 'command_center', description: 'Access the Security Command Center overview' },
+  { id: 'p-11', key: 'cameras:read', module: 'cameras', description: 'View registered cameras and health status (Phase 3)' },
+  { id: 'p-12', key: 'cameras:manage', module: 'cameras', description: 'Register, edit, and test camera endpoints (Phase 3)' },
+  { id: 'p-13', key: 'vision:read', module: 'vision', description: 'View live vision detections and video intelligence jobs (Phase 4)' },
+  { id: 'p-14', key: 'identity:verify', module: 'identity', description: 'Initiate multimodal biometric verification sessions (Phase 5)' },
+  { id: 'p-15', key: 'identity:enroll', module: 'identity', description: 'Enroll and manage biometric identity records (Phase 5)' },
+  { id: 'p-16', key: 'incidents:read', module: 'incidents', description: 'View security events, risk assessments, and incidents (Phase 6)' },
+  { id: 'p-17', key: 'incidents:manage', module: 'incidents', description: 'Triage, assign, and resolve security incidents (Phase 6)' },
+  { id: 'p-18', key: 'analyst:query', module: 'ai_analyst', description: 'Query the AI Security Analyst over authorized evidence (Phase 7)' },
+  { id: 'p-19', key: 'evidence:read', module: 'investigation', description: 'Access digital evidence records and chain-of-custody logs (Phase 8)' },
+  { id: 'p-20', key: 'reports:export', module: 'reports', description: 'Generate and export security and research reports (Phase 8)' },
+];

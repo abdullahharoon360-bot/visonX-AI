@@ -1,0 +1,338 @@
+{
+  "entities": {
+    "UserPublicProfile": {
+      "title": "UserPublicProfile",
+      "description": "Non-PII operator profile visible to authenticated organization members.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "jobTitle": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 120
+        },
+        "photoURL": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "jobTitle", "isActive", "createdAt", "updatedAt"]
+    },
+    "UserPrivateInfo": {
+      "title": "UserPrivateInfo",
+      "description": "Isolated PII record containing operator email and security session metadata.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 255
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "lastLoginAt", "createdAt", "updatedAt"]
+    },
+    "Organization": {
+      "title": "Organization",
+      "description": "Multi-tenant security workspace organization.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$",
+          "minLength": 3,
+          "maxLength": 64
+        },
+        "industry": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "suspended", "archived"]
+        },
+        "ownerUid": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "name", "slug", "industry", "status", "ownerUid", "createdAt", "updatedAt"]
+    },
+    "OrganizationMember": {
+      "title": "OrganizationMember",
+      "description": "RBAC membership binding an authenticated user to an organization with a role.",
+      "type": "object",
+      "properties": {
+        "orgId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "roleKey": {
+          "type": "string",
+          "enum": ["super_admin", "admin", "security_analyst", "operator", "viewer"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "suspended"]
+        },
+        "invitedBy": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "invitationId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "joinedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["orgId", "userId", "displayName", "roleKey", "status", "invitedBy", "joinedAt", "updatedAt"]
+    },
+    "OrganizationInvitation": {
+      "title": "OrganizationInvitation",
+      "description": "Email-scoped invitation granting organization access upon Google login.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "orgId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "inviteeEmail": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 255
+        },
+        "roleKey": {
+          "type": "string",
+          "enum": ["admin", "security_analyst", "operator", "viewer"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "accepted", "revoked"]
+        },
+        "invitedBy": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "orgId", "inviteeEmail", "roleKey", "status", "invitedBy", "createdAt", "updatedAt"]
+    },
+    "SystemSettings": {
+      "title": "SystemSettings",
+      "description": "Organization-level security policy and retention configuration.",
+      "type": "object",
+      "properties": {
+        "orgId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "sessionTimeoutMinutes": {
+          "type": "integer"
+        },
+        "requireMfaForPrivileged": {
+          "type": "boolean"
+        },
+        "retentionDays": {
+          "type": "integer"
+        },
+        "updatedBy": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["orgId", "sessionTimeoutMinutes", "requireMfaForPrivileged", "retentionDays", "updatedBy", "updatedAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable append-only audit trail for organization governance actions.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "orgId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "actorUid": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "action": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "resourceType": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "resourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "orgId", "actorUid", "action", "resourceType", "resourceId", "summary", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/userProfilesPublic/{userId}": {
+      "schema": { "$ref": "#/entities/UserPublicProfile" },
+      "description": "Non-PII operator profiles indexed by Firebase Auth UID."
+    },
+    "/userProfilesPrivate/{userId}": {
+      "schema": { "$ref": "#/entities/UserPrivateInfo" },
+      "description": "Private PII records (email, login telemetry) isolated strictly to owner or platform admin."
+    },
+    "/organizations/{orgId}": {
+      "schema": { "$ref": "#/entities/Organization" },
+      "description": "Top-level security workspace organizations."
+    },
+    "/organizations/{orgId}/members/{userId}": {
+      "schema": { "$ref": "#/entities/OrganizationMember" },
+      "description": "Active and suspended organization memberships and RBAC role keys."
+    },
+    "/organizations/{orgId}/invitations/{inviteId}": {
+      "schema": { "$ref": "#/entities/OrganizationInvitation" },
+      "description": "Email-scoped organization invitations."
+    },
+    "/organizations/{orgId}/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/SystemSettings" },
+      "description": "Organization security policy settings (document ID: default)."
+    },
+    "/organizations/{orgId}/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Immutable append-only audit logs scoped per organization."
+    }
+  }
+}
