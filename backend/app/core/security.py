@@ -1,25 +1,25 @@
 from dataclasses import dataclass
-from typing import Callable, Iterable, Optional, Set
+from typing import Callable, Optional, Set
 from uuid import UUID
 
 import jwt
 from fastapi import Depends, Header
 from jwt import PyJWKClient
-from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import get_settings
-from app.core.database import get_db
 from app.core.errors import AuthenticationError, AuthorizationError, ServiceUnavailableError
-from app.modules.organizations.models import OrganizationMember, UserProfile
-from app.modules.rbac.models import Role, RolePermission
+
+FIREBASE_JWKS_URL = (
+    "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+)
 
 
 @dataclass(frozen=True)
 class AuthenticatedUser:
-    user_id: UUID
+    user_id: str
     email: str
     full_name: str
+    email_verified: bool
 
 
 @dataclass(frozen=True)
@@ -35,129 +35,68 @@ class OrgAccessContext:
 _jwks_client: Optional[PyJWKClient] = None
 
 
-def _get_jwks_client() -> Optional[PyJWKClient]:
+def _get_jwks_client() -> PyJWKClient:
     global _jwks_client
-    settings = get_settings()
-    if not settings.supabase_url or "YOUR_PROJECT_REF" in settings.supabase_url:
-        return None
     if _jwks_client is None:
-        jwks_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
-        _jwks_client = PyJWKClient(jwks_url)
+        _jwks_client = PyJWKClient(FIREBASE_JWKS_URL)
     return _jwks_client
 
 
-def verify_supabase_jwt(token: str) -> dict:
-    """Verify Supabase JWT signature using JWKS (RS256/ES256) or HS256 secret."""
+def verify_firebase_id_token(token: str) -> dict:
+    """Verify Firebase Auth RS256 ID token against Google's public securetoken JWKS."""
     settings = get_settings()
-    if not settings.supabase_configured:
-        raise ServiceUnavailableError(
-            "Supabase authentication is not configured on the backend."
-        )
+    if not settings.firebase_configured:
+        raise ServiceUnavailableError("Firebase project ID is not configured on the backend.")
 
+    project_id = settings.firebase_project_id
     try:
-        unverified_header = jwt.get_unverified_header(token)
-        alg = unverified_header.get("alg", "HS256")
-        if alg == "HS256":
-            if not settings.supabase_jwt_secret:
-                raise ServiceUnavailableError("SUPABASE_JWT_SECRET is not configured.")
-            payload = jwt.decode(
-                token,
-                settings.supabase_jwt_secret,
-                algorithms=["HS256"],
-                audience="authenticated",
-            )
-        else:
-            jwks_client = _get_jwks_client()
-            if jwks_client is None:
-                raise ServiceUnavailableError("Supabase JWKS URL is not configured.")
-            signing_key = jwks_client.get_signing_key_from_jwt(token)
-            payload = jwt.decode(
-                token,
-                signing_key.key,
-                algorithms=[alg],
-                audience="authenticated",
-            )
+        signing_key = _get_jwks_client().get_signing_key_from_jwt(token)
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            audience=project_id,
+            issuer=f"https://securetoken.google.com/{project_id}",
+        )
         return payload
     except jwt.ExpiredSignatureError as exc:
-        raise AuthenticationError("Session token has expired.") from exc
+        raise AuthenticationError("Firebase session token has expired.") from exc
     except jwt.InvalidTokenError as exc:
-        raise AuthenticationError("Invalid authentication token.") from exc
+        raise AuthenticationError("Invalid Firebase authentication token.") from exc
 
 
 def get_current_user(
     authorization: Optional[str] = Header(default=None),
-    db: Session = Depends(get_db),
 ) -> AuthenticatedUser:
     if not authorization or not authorization.startswith("Bearer "):
         raise AuthenticationError("Missing Bearer authentication token.")
 
     raw_token = authorization.removeprefix("Bearer ").strip()
-    claims = verify_supabase_jwt(raw_token)
+    claims = verify_firebase_id_token(raw_token)
 
-    sub = claims.get("sub")
+    sub = claims.get("sub") or claims.get("user_id")
     if not sub:
         raise AuthenticationError("Token missing subject claim.")
 
-    try:
-        user_uuid = UUID(str(sub))
-    except ValueError as exc:
-        raise AuthenticationError("Malformed subject identifier in token.") from exc
-
-    profile = db.scalar(select(UserProfile).where(UserProfile.id == user_uuid))
-    if profile is None:
-        # Ensure profile row exists if auth trigger hasn't fired in local dev
-        email = str(claims.get("email") or "")
-        user_meta = claims.get("user_metadata") or {}
-        profile = UserProfile(
-            id=user_uuid,
-            email=email,
-            full_name=str(user_meta.get("full_name") or ""),
-            is_active=True,
-        )
-        db.add(profile)
-        db.commit()
-        db.refresh(profile)
-
-    if not profile.is_active:
-        raise AuthorizationError("User account has been deactivated.")
+    email_verified = bool(claims.get("email_verified", False))
+    if not email_verified:
+        raise AuthorizationError("Verified Google account email is required.")
 
     return AuthenticatedUser(
-        user_id=profile.id,
-        email=profile.email,
-        full_name=profile.full_name,
+        user_id=str(sub),
+        email=str(claims.get("email") or ""),
+        full_name=str(claims.get("name") or ""),
+        email_verified=email_verified,
     )
 
 
 def resolve_org_context(
     organization_id: UUID,
     user: AuthenticatedUser = Depends(get_current_user),
-    db: Session = Depends(get_db),
 ) -> OrgAccessContext:
-    stmt = (
-        select(OrganizationMember)
-        .options(
-            joinedload(OrganizationMember.role)
-            .joinedload(Role.permissions)
-            .joinedload(RolePermission.permission)
-        )
-        .where(
-            OrganizationMember.organization_id == organization_id,
-            OrganizationMember.user_id == user.user_id,
-            OrganizationMember.status == "active",
-        )
-    )
-    membership = db.scalar(stmt)
-    if membership is None or membership.role is None:
-        raise AuthorizationError("You do not have active membership in this organization.")
-
-    perms = {rp.permission.key for rp in membership.role.permissions if rp.permission is not None}
-    return OrgAccessContext(
-        user=user,
-        organization_id=organization_id,
-        role_key=membership.role.key,
-        role_name=membership.role.name,
-        hierarchy_level=membership.role.hierarchy_level,
-        permissions=perms,
+    """Baseline organization RBAC context resolver for FastAPI worker endpoints."""
+    raise ServiceUnavailableError(
+        "Organization RBAC lookup via FastAPI activates when backend worker storage is attached."
     )
 
 

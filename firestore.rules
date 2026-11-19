@@ -31,12 +31,21 @@ service cloud.firestore {
       return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
+    function isRecentServerTimestamp(ts) {
+      return ts is timestamp &&
+        ts >= request.time - duration.value(60, 's') &&
+        ts <= request.time + duration.value(60, 's');
+    }
+
     function isOwner(userId) {
       return isVerifiedUser() && request.auth.uid == userId;
     }
 
     function isBootstrappedPlatformAdmin() {
-      return isVerifiedUser() && request.auth.token.email == 'abdullahmohamedharoon8@gmail.com';
+      return isVerifiedUser() && (
+        request.auth.token.email.lower() == 'abdullahmohamedharoon8@gmail.com' ||
+        request.auth.token.email.lower() == 'abdullahharoon360@gmail.com'
+      );
     }
 
     function isPlatformAdmin() {
@@ -60,8 +69,21 @@ service cloud.firestore {
       return isOrgMember(orgId) && getOrgRole(orgId) in ['super_admin', 'admin'];
     }
 
+    function matchesOrgOwner(orgId, orgOwnerUid) {
+      return get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerUid == orgOwnerUid;
+    }
+
+    function canListOrgRecord(data) {
+      return isBootstrappedPlatformAdmin() || (
+        isVerifiedUser() && (
+          data.createdByUid == request.auth.uid ||
+          data.orgOwnerUid == request.auth.uid
+        )
+      );
+    }
+
     // -------------------------------------------------------------------------
-    // Validation Blueprints (Synchronized with firebase-blueprint.json)
+    // Phase 1 Validation Blueprints
     // -------------------------------------------------------------------------
     function isValidUserPublicProfile(data, userId) {
       return data.keys().hasAll(['uid', 'displayName', 'jobTitle', 'isActive', 'createdAt', 'updatedAt']) &&
@@ -151,6 +173,244 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
+    // Phases 2–8 Validation Blueprints
+    // -------------------------------------------------------------------------
+    function isValidCamera(data, orgId, cameraId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'name', 'zone', 'location', 'streamType', 'endpointMasked', 'status', 'resolution', 'targetFps', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'name', 'zone', 'location', 'streamType', 'endpointMasked', 'status', 'resolution', 'targetFps', 'lastLatencyMs', 'lastCheckedAt', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id == cameraId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        data.zone is string && data.zone.size() >= 2 && data.zone.size() <= 80 &&
+        data.location is string && data.location.size() >= 2 && data.location.size() <= 160 &&
+        data.streamType in ['webcam', 'rtsp', 'onvif', 'http_snapshot'] &&
+        data.endpointMasked is string && data.endpointMasked.size() >= 3 && data.endpointMasked.size() <= 255 &&
+        data.status in ['active', 'offline', 'maintenance'] &&
+        data.resolution is string && data.resolution.size() >= 3 && data.resolution.size() <= 32 &&
+        data.targetFps is int && data.targetFps >= 1 && data.targetFps <= 120 &&
+        (!('lastLatencyMs' in data) || data.lastLatencyMs == null || (data.lastLatencyMs is int && data.lastLatencyMs >= 0 && data.lastLatencyMs <= 60000)) &&
+        (!('lastCheckedAt' in data) || data.lastCheckedAt == null || (data.lastCheckedAt is string && data.lastCheckedAt.size() <= 64)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidVisionDetection(data, orgId, detectionId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'cameraId', 'cameraName', 'sourceType', 'peopleCount', 'vehicleCount', 'anomalyCount', 'maxConfidence', 'inferenceMs', 'summary', 'detections', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'cameraId', 'cameraName', 'sourceType', 'peopleCount', 'vehicleCount', 'anomalyCount', 'maxConfidence', 'inferenceMs', 'summary', 'detections', 'createdAt']) &&
+        data.id is string && data.id == detectionId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.cameraId is string && data.cameraId.size() >= 1 && data.cameraId.size() <= 128 &&
+        data.cameraName is string && data.cameraName.size() >= 1 && data.cameraName.size() <= 120 &&
+        data.sourceType in ['webcam', 'upload', 'camera_snapshot'] &&
+        data.peopleCount is int && data.peopleCount >= 0 && data.peopleCount <= 500 &&
+        data.vehicleCount is int && data.vehicleCount >= 0 && data.vehicleCount <= 500 &&
+        data.anomalyCount is int && data.anomalyCount >= 0 && data.anomalyCount <= 500 &&
+        data.maxConfidence is number && data.maxConfidence >= 0 && data.maxConfidence <= 1 &&
+        data.inferenceMs is int && data.inferenceMs >= 0 && data.inferenceMs <= 300000 &&
+        data.summary is string && data.summary.size() >= 1 && data.summary.size() <= 600 &&
+        data.detections is list && data.detections.size() <= 50 &&
+        (data.detections.size() == 0 || data.detections[0] is map) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidVideoJob(data, orgId, jobId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'fileName', 'fileSizeBytes', 'durationSec', 'resolution', 'framesSampled', 'avgBrightness', 'avgSharpness', 'status', 'summary', 'detectedPlates', 'timeline', 'inferenceMs', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'fileName', 'fileSizeBytes', 'durationSec', 'resolution', 'framesSampled', 'avgBrightness', 'avgSharpness', 'status', 'summary', 'detectedPlates', 'timeline', 'inferenceMs', 'createdAt']) &&
+        data.id is string && data.id == jobId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 200 &&
+        data.fileSizeBytes is int && data.fileSizeBytes >= 0 &&
+        data.durationSec is number && data.durationSec >= 0 &&
+        data.resolution is string && data.resolution.size() >= 3 && data.resolution.size() <= 32 &&
+        data.framesSampled is int && data.framesSampled >= 1 && data.framesSampled <= 120 &&
+        data.avgBrightness is number && data.avgBrightness >= 0 && data.avgBrightness <= 255 &&
+        data.avgSharpness is number && data.avgSharpness >= 0 &&
+        data.status in ['completed', 'failed'] &&
+        data.summary is string && data.summary.size() >= 1 && data.summary.size() <= 1000 &&
+        data.detectedPlates is list && data.detectedPlates.size() <= 30 &&
+        (data.detectedPlates.size() == 0 || data.detectedPlates[0] is string) &&
+        data.timeline is list && data.timeline.size() <= 50 &&
+        (data.timeline.size() == 0 || data.timeline[0] is map) &&
+        data.inferenceMs is int && data.inferenceMs >= 0 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidBiometricIdentity(data, orgId, identityId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'fullName', 'employeeCode', 'department', 'clearanceLevel', 'status', 'faceEnrolled', 'voiceEnrolled', 'fingerprintEnrolled', 'faceDescriptorDigest', 'voiceDescriptorDigest', 'fingerprintDescriptorDigest', 'enrollmentNotes', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'fullName', 'employeeCode', 'department', 'clearanceLevel', 'status', 'faceEnrolled', 'voiceEnrolled', 'fingerprintEnrolled', 'faceDescriptorDigest', 'voiceDescriptorDigest', 'fingerprintDescriptorDigest', 'enrollmentNotes', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id == identityId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 120 &&
+        data.employeeCode is string && data.employeeCode.size() >= 2 && data.employeeCode.size() <= 64 &&
+        data.department is string && data.department.size() >= 2 && data.department.size() <= 80 &&
+        data.clearanceLevel in ['standard', 'elevated', 'restricted', 'executive'] &&
+        data.status in ['active', 'suspended'] &&
+        data.faceEnrolled is bool &&
+        data.voiceEnrolled is bool &&
+        data.fingerprintEnrolled is bool &&
+        data.faceDescriptorDigest is string && data.faceDescriptorDigest.size() <= 128 &&
+        data.voiceDescriptorDigest is string && data.voiceDescriptorDigest.size() <= 128 &&
+        data.fingerprintDescriptorDigest is string && data.fingerprintDescriptorDigest.size() <= 128 &&
+        data.enrollmentNotes is string && data.enrollmentNotes.size() <= 500 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidVerificationLog(data, orgId, logId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'identityId', 'identityName', 'checkpointName', 'modalitiesUsed', 'fusedScore', 'livenessPassed', 'outcome', 'rationale', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'identityId', 'identityName', 'checkpointName', 'modalitiesUsed', 'faceScore', 'voiceScore', 'fingerprintScore', 'fusedScore', 'livenessPassed', 'outcome', 'rationale', 'createdAt']) &&
+        data.id is string && data.id == logId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.identityId is string && data.identityId.size() >= 1 && data.identityId.size() <= 128 &&
+        data.identityName is string && data.identityName.size() >= 1 && data.identityName.size() <= 120 &&
+        data.checkpointName is string && data.checkpointName.size() >= 2 && data.checkpointName.size() <= 120 &&
+        data.modalitiesUsed is list && data.modalitiesUsed.size() >= 1 && data.modalitiesUsed.size() <= 3 &&
+        data.modalitiesUsed[0] is string &&
+        (!('faceScore' in data) || data.faceScore == null || (data.faceScore is number && data.faceScore >= 0 && data.faceScore <= 1)) &&
+        (!('voiceScore' in data) || data.voiceScore == null || (data.voiceScore is number && data.voiceScore >= 0 && data.voiceScore <= 1)) &&
+        (!('fingerprintScore' in data) || data.fingerprintScore == null || (data.fingerprintScore is number && data.fingerprintScore >= 0 && data.fingerprintScore <= 1)) &&
+        data.fusedScore is number && data.fusedScore >= 0 && data.fusedScore <= 1 &&
+        data.livenessPassed is bool &&
+        data.outcome in ['verified', 'failed', 'inconclusive'] &&
+        data.rationale is string && data.rationale.size() >= 1 && data.rationale.size() <= 600 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidSecurityEvent(data, orgId, eventId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'sourceModule', 'eventType', 'severity', 'cameraId', 'zone', 'title', 'detail', 'acknowledged', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'sourceModule', 'eventType', 'severity', 'cameraId', 'zone', 'title', 'detail', 'acknowledged', 'createdAt']) &&
+        data.id is string && data.id == eventId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.sourceModule in ['vision', 'video', 'identity', 'camera', 'manual'] &&
+        data.eventType is string && data.eventType.size() >= 2 && data.eventType.size() <= 80 &&
+        data.severity in ['low', 'medium', 'high', 'critical'] &&
+        data.cameraId is string && data.cameraId.size() <= 128 &&
+        data.zone is string && data.zone.size() >= 2 && data.zone.size() <= 80 &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 160 &&
+        data.detail is string && data.detail.size() >= 2 && data.detail.size() <= 600 &&
+        data.acknowledged is bool &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidRiskAssessment(data, orgId, assessmentId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'targetLabel', 'zone', 'riskScore', 'severity', 'factors', 'recommendation', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'targetLabel', 'zone', 'riskScore', 'severity', 'factors', 'recommendation', 'createdAt']) &&
+        data.id is string && data.id == assessmentId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.targetLabel is string && data.targetLabel.size() >= 2 && data.targetLabel.size() <= 160 &&
+        data.zone is string && data.zone.size() >= 2 && data.zone.size() <= 80 &&
+        data.riskScore is number && data.riskScore >= 0 && data.riskScore <= 100 &&
+        data.severity in ['low', 'medium', 'high', 'critical'] &&
+        data.factors is list && data.factors.size() >= 1 && data.factors.size() <= 12 &&
+        data.factors[0] is map &&
+        data.recommendation is string && data.recommendation.size() >= 2 && data.recommendation.size() <= 500 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidIncident(data, orgId, incidentId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'title', 'description', 'severity', 'status', 'zone', 'linkedCameraId', 'linkedEventId', 'riskScore', 'assignedToUid', 'resolutionNotes', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'title', 'description', 'severity', 'status', 'zone', 'linkedCameraId', 'linkedEventId', 'riskScore', 'assignedToUid', 'resolutionNotes', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id == incidentId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 160 &&
+        data.description is string && data.description.size() >= 3 && data.description.size() <= 1200 &&
+        data.severity in ['low', 'medium', 'high', 'critical'] &&
+        data.status in ['open', 'investigating', 'contained', 'resolved', 'closed'] &&
+        data.zone is string && data.zone.size() >= 2 && data.zone.size() <= 80 &&
+        data.linkedCameraId is string && data.linkedCameraId.size() <= 128 &&
+        data.linkedEventId is string && data.linkedEventId.size() <= 128 &&
+        data.riskScore is number && data.riskScore >= 0 && data.riskScore <= 100 &&
+        data.assignedToUid is string && data.assignedToUid.size() <= 128 &&
+        data.resolutionNotes is string && data.resolutionNotes.size() <= 1200 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAnalystSession(data, orgId, sessionId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'prompt', 'responseText', 'contextSnapshot', 'modelName', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'prompt', 'responseText', 'contextSnapshot', 'modelName', 'createdAt']) &&
+        data.id is string && data.id == sessionId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.prompt is string && data.prompt.size() >= 2 && data.prompt.size() <= 1000 &&
+        data.responseText is string && data.responseText.size() >= 1 && data.responseText.size() <= 8000 &&
+        data.contextSnapshot is string && data.contextSnapshot.size() <= 1000 &&
+        data.modelName is string && data.modelName.size() >= 2 && data.modelName.size() <= 80 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidEvidenceItem(data, orgId, evidenceId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'caseNumber', 'title', 'sourceType', 'fileName', 'fileSizeBytes', 'sha256Digest', 'linkedIncidentId', 'custodyStatus', 'custodyNotes', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'caseNumber', 'title', 'sourceType', 'fileName', 'fileSizeBytes', 'sha256Digest', 'linkedIncidentId', 'custodyStatus', 'custodyNotes', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id == evidenceId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.caseNumber is string && data.caseNumber.size() >= 2 && data.caseNumber.size() <= 64 &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 160 &&
+        data.sourceType in ['image_frame', 'video_clip', 'biometric_log', 'incident_bundle'] &&
+        data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 200 &&
+        data.fileSizeBytes is int && data.fileSizeBytes >= 0 &&
+        data.sha256Digest is string && data.sha256Digest.size() == 64 &&
+        data.linkedIncidentId is string && data.linkedIncidentId.size() <= 128 &&
+        data.custodyStatus in ['sealed', 'under_review', 'exported'] &&
+        data.custodyNotes is string && data.custodyNotes.size() <= 600 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidBenchmarkRun(data, orgId, runId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'runName', 'datasetSource', 'sampleCount', 'threshold', 'far', 'frr', 'tar', 'eer', 'auc', 'avgLatencyMs', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'runName', 'datasetSource', 'sampleCount', 'threshold', 'far', 'frr', 'tar', 'eer', 'auc', 'avgLatencyMs', 'createdAt']) &&
+        data.id is string && data.id == runId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.runName is string && data.runName.size() >= 2 && data.runName.size() <= 120 &&
+        data.datasetSource in ['live_verifications', 'imported_scores'] &&
+        data.sampleCount is int && data.sampleCount >= 1 &&
+        data.threshold is number && data.threshold >= 0 && data.threshold <= 1 &&
+        data.far is number && data.far >= 0 && data.far <= 1 &&
+        data.frr is number && data.frr >= 0 && data.frr <= 1 &&
+        data.tar is number && data.tar >= 0 && data.tar <= 1 &&
+        data.eer is number && data.eer >= 0 && data.eer <= 1 &&
+        data.auc is number && data.auc >= 0 && data.auc <= 1 &&
+        data.avgLatencyMs is number && data.avgLatencyMs >= 0 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidSecurityReport(data, orgId, reportId) {
+      return data.keys().hasAll(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'title', 'reportType', 'summary', 'metricsSnapshot', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'orgId', 'orgOwnerUid', 'createdByUid', 'title', 'reportType', 'summary', 'metricsSnapshot', 'createdAt']) &&
+        data.id is string && data.id == reportId && isValidId(data.id) &&
+        data.orgId is string && data.orgId == orgId && isValidId(data.orgId) &&
+        data.orgOwnerUid is string && isValidId(data.orgOwnerUid) &&
+        data.createdByUid is string && isValidId(data.createdByUid) &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 160 &&
+        data.reportType in ['executive', 'compliance', 'forensic', 'biometric'] &&
+        data.summary is string && data.summary.size() >= 2 && data.summary.size() <= 2000 &&
+        data.metricsSnapshot is map &&
+        data.createdAt is timestamp;
+    }
+
+    // -------------------------------------------------------------------------
     // Admins Registry (Read-only for self-check)
     // -------------------------------------------------------------------------
     match /admins/{adminUid} {
@@ -169,14 +429,14 @@ service cloud.firestore {
         isOwner(userId) &&
         isValidUserPublicProfile(incoming(), userId) &&
         incoming().isActive == true &&
-        incoming().createdAt == request.time &&
-        incoming().updatedAt == request.time;
+        isRecentServerTimestamp(incoming().createdAt) &&
+        isRecentServerTimestamp(incoming().updatedAt);
 
       allow update: if isValidId(userId) &&
         isValidUserPublicProfile(incoming(), userId) &&
         incoming().uid == existing().uid &&
         incoming().createdAt == existing().createdAt &&
-        incoming().updatedAt == request.time && (
+        isRecentServerTimestamp(incoming().updatedAt) && (
           isPlatformAdmin() ||
           (isOwner(userId) &&
             incoming().isActive == existing().isActive &&
@@ -193,19 +453,19 @@ service cloud.firestore {
       allow create: if isValidId(userId) &&
         isOwner(userId) &&
         isValidUserPrivateInfo(incoming(), userId) &&
-        incoming().email == request.auth.token.email &&
-        incoming().lastLoginAt == request.time &&
-        incoming().createdAt == request.time &&
-        incoming().updatedAt == request.time;
+        incoming().email.lower() == request.auth.token.email.lower() &&
+        isRecentServerTimestamp(incoming().lastLoginAt) &&
+        isRecentServerTimestamp(incoming().createdAt) &&
+        isRecentServerTimestamp(incoming().updatedAt);
 
       allow update: if isValidId(userId) &&
         isOwner(userId) &&
         isValidUserPrivateInfo(incoming(), userId) &&
         incoming().uid == existing().uid &&
-        incoming().email == request.auth.token.email &&
+        incoming().email.lower() == request.auth.token.email.lower() &&
         incoming().createdAt == existing().createdAt &&
-        incoming().lastLoginAt == request.time &&
-        incoming().updatedAt == request.time &&
+        isRecentServerTimestamp(incoming().lastLoginAt) &&
+        isRecentServerTimestamp(incoming().updatedAt) &&
         incoming().diff(existing()).affectedKeys().hasOnly(['email', 'lastLoginAt', 'updatedAt']);
 
       allow delete: if false;
@@ -219,7 +479,7 @@ service cloud.firestore {
     }
 
     match /{path=**}/invitations/{inviteId} {
-      allow list: if isVerifiedUser() && (isBootstrappedPlatformAdmin() || resource.data.inviteeEmail == request.auth.token.email);
+      allow list: if isVerifiedUser() && (isBootstrappedPlatformAdmin() || resource.data.inviteeEmail.lower() == request.auth.token.email.lower());
     }
 
     // -------------------------------------------------------------------------
@@ -234,8 +494,8 @@ service cloud.firestore {
         isValidOrganization(incoming(), orgId) &&
         incoming().ownerUid == request.auth.uid &&
         incoming().status == 'active' &&
-        incoming().createdAt == request.time &&
-        incoming().updatedAt == request.time &&
+        isRecentServerTimestamp(incoming().createdAt) &&
+        isRecentServerTimestamp(incoming().updatedAt) &&
         existsAfter(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
 
       allow update: if isValidId(orgId) &&
@@ -243,7 +503,7 @@ service cloud.firestore {
         incoming().id == existing().id &&
         incoming().ownerUid == existing().ownerUid &&
         incoming().createdAt == existing().createdAt &&
-        incoming().updatedAt == request.time && (
+        isRecentServerTimestamp(incoming().updatedAt) && (
           isPlatformAdmin() ||
           (isOrgAdmin(orgId) &&
             incoming().diff(existing()).affectedKeys().hasOnly(['name', 'industry', 'updatedAt']))
@@ -262,21 +522,18 @@ service cloud.firestore {
           isValidId(userId) &&
           isVerifiedUser() &&
           isValidOrganizationMember(incoming(), orgId, userId) &&
-          incoming().joinedAt == request.time &&
-          incoming().updatedAt == request.time && (
-            // Action 1: Organization creator seeding initial admin membership atomically
+          isRecentServerTimestamp(incoming().joinedAt) &&
+          isRecentServerTimestamp(incoming().updatedAt) && (
             (userId == request.auth.uid &&
               incoming().roleKey == 'admin' &&
               incoming().status == 'active' &&
               incoming().invitedBy == request.auth.uid &&
               getAfter(/databases/$(database)/documents/organizations/$(orgId)).data.ownerUid == request.auth.uid) ||
-            // Action 2: Platform or Org Admin adding a member directly
             (isPlatformAdmin() || (isOrgAdmin(orgId) && incoming().roleKey != 'super_admin' && incoming().invitedBy == request.auth.uid)) ||
-            // Action 3: Invitee atomically accepting a pending email-matched invitation
             (userId == request.auth.uid &&
               'invitationId' in incoming() &&
               incoming().status == 'active' &&
-              get(/databases/$(database)/documents/organizations/$(orgId)/invitations/$(incoming().invitationId)).data.inviteeEmail == request.auth.token.email &&
+              get(/databases/$(database)/documents/organizations/$(orgId)/invitations/$(incoming().invitationId)).data.inviteeEmail.lower() == request.auth.token.email.lower() &&
               get(/databases/$(database)/documents/organizations/$(orgId)/invitations/$(incoming().invitationId)).data.status == 'pending' &&
               getAfter(/databases/$(database)/documents/organizations/$(orgId)/invitations/$(incoming().invitationId)).data.status == 'accepted' &&
               incoming().roleKey == get(/databases/$(database)/documents/organizations/$(orgId)/invitations/$(incoming().invitationId)).data.roleKey &&
@@ -290,7 +547,7 @@ service cloud.firestore {
           incoming().userId == existing().userId &&
           incoming().invitedBy == existing().invitedBy &&
           incoming().joinedAt == existing().joinedAt &&
-          incoming().updatedAt == request.time && (
+          isRecentServerTimestamp(incoming().updatedAt) && (
             isPlatformAdmin() ||
             (isOrgAdmin(orgId) &&
               incoming().roleKey != 'super_admin' &&
@@ -305,11 +562,11 @@ service cloud.firestore {
         allow get: if isValidId(orgId) && isValidId(inviteId) && (
           isPlatformAdmin() ||
           isOrgAdmin(orgId) ||
-          (isVerifiedUser() && existing().inviteeEmail == request.auth.token.email)
+          (isVerifiedUser() && existing().inviteeEmail.lower() == request.auth.token.email.lower())
         );
         allow list: if isBootstrappedPlatformAdmin() || (isVerifiedUser() && (
           resource.data.invitedBy == request.auth.uid ||
-          resource.data.inviteeEmail == request.auth.token.email
+          resource.data.inviteeEmail.lower() == request.auth.token.email.lower()
         ));
 
         allow create: if isValidId(orgId) &&
@@ -317,8 +574,8 @@ service cloud.firestore {
           isValidOrganizationInvitation(incoming(), orgId, inviteId) &&
           incoming().status == 'pending' &&
           incoming().invitedBy == request.auth.uid &&
-          incoming().createdAt == request.time &&
-          incoming().updatedAt == request.time &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          isRecentServerTimestamp(incoming().updatedAt) &&
           exists(/databases/$(database)/documents/organizations/$(orgId)) &&
           (isPlatformAdmin() || isOrgAdmin(orgId));
 
@@ -332,10 +589,10 @@ service cloud.firestore {
           incoming().roleKey == existing().roleKey &&
           incoming().invitedBy == existing().invitedBy &&
           incoming().createdAt == existing().createdAt &&
-          incoming().updatedAt == request.time &&
+          isRecentServerTimestamp(incoming().updatedAt) &&
           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) && (
             ((isPlatformAdmin() || isOrgAdmin(orgId)) && incoming().status == 'revoked') ||
-            (isVerifiedUser() && existing().inviteeEmail == request.auth.token.email && incoming().status == 'accepted')
+            (isVerifiedUser() && existing().inviteeEmail.lower() == request.auth.token.email.lower() && incoming().status == 'accepted')
           );
 
         allow delete: if false;
@@ -350,7 +607,7 @@ service cloud.firestore {
           settingId == 'default' &&
           isValidSystemSettings(incoming(), orgId) &&
           incoming().updatedBy == request.auth.uid &&
-          incoming().updatedAt == request.time && (
+          isRecentServerTimestamp(incoming().updatedAt) && (
             isPlatformAdmin() ||
             getAfter(/databases/$(database)/documents/organizations/$(orgId)).data.ownerUid == request.auth.uid ||
             isOrgAdmin(orgId)
@@ -362,7 +619,7 @@ service cloud.firestore {
           isValidSystemSettings(incoming(), orgId) &&
           incoming().orgId == existing().orgId &&
           incoming().updatedBy == request.auth.uid &&
-          incoming().updatedAt == request.time &&
+          isRecentServerTimestamp(incoming().updatedAt) &&
           incoming().diff(existing()).affectedKeys().hasOnly(['sessionTimeoutMinutes', 'requireMfaForPrivileged', 'retentionDays', 'updatedBy', 'updatedAt']) &&
           (isPlatformAdmin() || isOrgAdmin(orgId));
 
@@ -378,11 +635,285 @@ service cloud.firestore {
           isVerifiedUser() &&
           isValidAuditLog(incoming(), orgId, logId) &&
           incoming().actorUid == request.auth.uid &&
-          incoming().createdAt == request.time && (
+          isRecentServerTimestamp(incoming().createdAt) && (
             isPlatformAdmin() ||
             isOrgMember(orgId) ||
             existsAfter(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid))
           );
+
+        allow update, delete: if false;
+      }
+
+      // Phase 3: Cameras
+      match /cameras/{cameraId} {
+        allow get: if isValidId(orgId) && isValidId(cameraId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(cameraId) &&
+          isVerifiedUser() &&
+          isValidCamera(incoming(), orgId, cameraId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          isRecentServerTimestamp(incoming().updatedAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow update: if isValidId(orgId) &&
+          isValidId(cameraId) &&
+          isVerifiedUser() &&
+          isValidCamera(incoming(), orgId, cameraId) &&
+          incoming().id == existing().id &&
+          incoming().orgId == existing().orgId &&
+          incoming().orgOwnerUid == existing().orgOwnerUid &&
+          incoming().createdByUid == existing().createdByUid &&
+          incoming().createdAt == existing().createdAt &&
+          isRecentServerTimestamp(incoming().updatedAt) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'zone', 'location', 'streamType', 'endpointMasked', 'status', 'resolution', 'targetFps', 'lastLatencyMs', 'lastCheckedAt', 'updatedAt']) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow delete: if false;
+      }
+
+      // Phase 3/4: Vision Detections (Immutable inference records)
+      match /visionDetections/{detectionId} {
+        allow get: if isValidId(orgId) && isValidId(detectionId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(detectionId) &&
+          isVerifiedUser() &&
+          isValidVisionDetection(incoming(), orgId, detectionId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow update, delete: if false;
+      }
+
+      // Phase 4: Video Intelligence Jobs (Immutable completed job logs)
+      match /videoJobs/{jobId} {
+        allow get: if isValidId(orgId) && isValidId(jobId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(jobId) &&
+          isVerifiedUser() &&
+          isValidVideoJob(incoming(), orgId, jobId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow update, delete: if false;
+      }
+
+      // Phase 5: Biometric Identities
+      match /biometricIdentities/{identityId} {
+        allow get: if isValidId(orgId) && isValidId(identityId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(identityId) &&
+          isVerifiedUser() &&
+          isValidBiometricIdentity(incoming(), orgId, identityId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          isRecentServerTimestamp(incoming().updatedAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow update: if isValidId(orgId) &&
+          isValidId(identityId) &&
+          isVerifiedUser() &&
+          isValidBiometricIdentity(incoming(), orgId, identityId) &&
+          incoming().id == existing().id &&
+          incoming().orgId == existing().orgId &&
+          incoming().orgOwnerUid == existing().orgOwnerUid &&
+          incoming().createdByUid == existing().createdByUid &&
+          incoming().createdAt == existing().createdAt &&
+          isRecentServerTimestamp(incoming().updatedAt) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['clearanceLevel', 'status', 'faceEnrolled', 'voiceEnrolled', 'fingerprintEnrolled', 'faceDescriptorDigest', 'voiceDescriptorDigest', 'fingerprintDescriptorDigest', 'enrollmentNotes', 'updatedAt']) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow delete: if false;
+      }
+
+      // Phase 5: Multimodal Verification Logs (Immutable)
+      match /verificationLogs/{logId} {
+        allow get: if isValidId(orgId) && isValidId(logId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(logId) &&
+          isVerifiedUser() &&
+          isValidVerificationLog(incoming(), orgId, logId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow update, delete: if false;
+      }
+
+      // Phase 6: Security Events
+      match /securityEvents/{eventId} {
+        allow get: if isValidId(orgId) && isValidId(eventId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(eventId) &&
+          isVerifiedUser() &&
+          isValidSecurityEvent(incoming(), orgId, eventId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow update: if isValidId(orgId) &&
+          isValidId(eventId) &&
+          isVerifiedUser() &&
+          isValidSecurityEvent(incoming(), orgId, eventId) &&
+          incoming().id == existing().id &&
+          incoming().orgId == existing().orgId &&
+          incoming().orgOwnerUid == existing().orgOwnerUid &&
+          incoming().createdByUid == existing().createdByUid &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['acknowledged']) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow delete: if false;
+      }
+
+      // Phase 6: Risk Assessments (Immutable)
+      match /riskAssessments/{assessmentId} {
+        allow get: if isValidId(orgId) && isValidId(assessmentId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(assessmentId) &&
+          isVerifiedUser() &&
+          isValidRiskAssessment(incoming(), orgId, assessmentId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow update, delete: if false;
+      }
+
+      // Phase 6: Security Incidents
+      match /incidents/{incidentId} {
+        allow get: if isValidId(orgId) && isValidId(incidentId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(incidentId) &&
+          isVerifiedUser() &&
+          isValidIncident(incoming(), orgId, incidentId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          isRecentServerTimestamp(incoming().updatedAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow update: if isValidId(orgId) &&
+          isValidId(incidentId) &&
+          isVerifiedUser() &&
+          isValidIncident(incoming(), orgId, incidentId) &&
+          incoming().id == existing().id &&
+          incoming().orgId == existing().orgId &&
+          incoming().orgOwnerUid == existing().orgOwnerUid &&
+          incoming().createdByUid == existing().createdByUid &&
+          incoming().createdAt == existing().createdAt &&
+          isRecentServerTimestamp(incoming().updatedAt) &&
+          (existing().status != 'closed' || isPlatformAdmin()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['severity', 'status', 'assignedToUid', 'resolutionNotes', 'updatedAt']) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow delete: if false;
+      }
+
+      // Phase 7: AI Security Analyst Sessions (Immutable)
+      match /analystSessions/{sessionId} {
+        allow get: if isValidId(orgId) && isValidId(sessionId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(sessionId) &&
+          isVerifiedUser() &&
+          isValidAnalystSession(incoming(), orgId, sessionId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow update, delete: if false;
+      }
+
+      // Phase 8: Digital Evidence Items
+      match /evidenceItems/{evidenceId} {
+        allow get: if isValidId(orgId) && isValidId(evidenceId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(evidenceId) &&
+          isVerifiedUser() &&
+          isValidEvidenceItem(incoming(), orgId, evidenceId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          isRecentServerTimestamp(incoming().updatedAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow update: if isValidId(orgId) &&
+          isValidId(evidenceId) &&
+          isVerifiedUser() &&
+          isValidEvidenceItem(incoming(), orgId, evidenceId) &&
+          incoming().id == existing().id &&
+          incoming().orgId == existing().orgId &&
+          incoming().orgOwnerUid == existing().orgOwnerUid &&
+          incoming().createdByUid == existing().createdByUid &&
+          incoming().sha256Digest == existing().sha256Digest &&
+          incoming().createdAt == existing().createdAt &&
+          isRecentServerTimestamp(incoming().updatedAt) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['custodyStatus', 'custodyNotes', 'linkedIncidentId', 'updatedAt']) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow delete: if false;
+      }
+
+      // Phase 8: Research Lab Benchmarks (Immutable)
+      match /benchmarkRuns/{runId} {
+        allow get: if isValidId(orgId) && isValidId(runId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(runId) &&
+          isVerifiedUser() &&
+          isValidBenchmarkRun(incoming(), orgId, runId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
+
+        allow update, delete: if false;
+      }
+
+      // Phase 8: Security Reports (Immutable)
+      match /securityReports/{reportId} {
+        allow get: if isValidId(orgId) && isValidId(reportId) && (isPlatformAdmin() || isOrgMember(orgId));
+        allow list: if canListOrgRecord(resource.data);
+
+        allow create: if isValidId(orgId) &&
+          isValidId(reportId) &&
+          isVerifiedUser() &&
+          isValidSecurityReport(incoming(), orgId, reportId) &&
+          incoming().createdByUid == request.auth.uid &&
+          isRecentServerTimestamp(incoming().createdAt) &&
+          matchesOrgOwner(orgId, incoming().orgOwnerUid) &&
+          (isPlatformAdmin() || isOrgMember(orgId));
 
         allow update, delete: if false;
       }

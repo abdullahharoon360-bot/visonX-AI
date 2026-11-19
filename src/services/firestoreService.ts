@@ -48,8 +48,23 @@ function getRoleMeta(roleKey: SystemRoleKey) {
   return REFERENCE_ROLES.find((r) => r.key === roleKey) ?? REFERENCE_ROLES[REFERENCE_ROLES.length - 1];
 }
 
+const inFlightProfileSyncs = new Map<string, Promise<UserProfile>>();
+
 export const firestoreService = {
   async syncUserProfiles(user: User): Promise<UserProfile> {
+    const existingSync = inFlightProfileSyncs.get(user.uid);
+    if (existingSync) {
+      return existingSync;
+    }
+
+    const syncPromise = this._performSyncUserProfiles(user).finally(() => {
+      inFlightProfileSyncs.delete(user.uid);
+    });
+    inFlightProfileSyncs.set(user.uid, syncPromise);
+    return syncPromise;
+  },
+
+  async _performSyncUserProfiles(user: User): Promise<UserProfile> {
     const publicPath = `userProfilesPublic/${user.uid}`;
     const privatePath = `userProfilesPrivate/${user.uid}`;
     const displayName = (user.displayName || user.email?.split('@')[0] || 'VisionX Operator').slice(0, 120);
@@ -165,8 +180,9 @@ export const firestoreService = {
     organizations: OrganizationRecord[];
   }> {
     const membershipsPath = 'collectionGroup/members';
-    const isBootstrappedAdmin =
-      email.toLowerCase() === firebaseProjectInfo.bootstrappedAdminEmail;
+    const isBootstrappedAdmin = firebaseProjectInfo.bootstrappedAdminEmails.includes(
+      email.toLowerCase()
+    );
 
     let memberDocs: Array<Record<string, unknown>> = [];
     try {
@@ -238,6 +254,7 @@ export const firestoreService = {
         organization_name: org.name,
         organization_slug: org.slug,
         organization_industry: org.industry,
+        organization_owner_uid: org.ownerUid,
         role_key: roleKey,
         role_name: roleMeta.name,
         hierarchy_level: roleMeta.hierarchy_level,
@@ -256,6 +273,7 @@ export const firestoreService = {
             organization_name: org.name,
             organization_slug: org.slug,
             organization_industry: org.industry,
+            organization_owner_uid: org.ownerUid,
             role_key: 'super_admin',
             role_name: superRole.name,
             hierarchy_level: superRole.hierarchy_level,
@@ -358,8 +376,9 @@ export const firestoreService = {
     actorEmail: string
   ): Promise<OrganizationMemberRecord[]> {
     const path = `organizations/${orgId}/members`;
-    const isAdminEmail =
-      actorEmail.toLowerCase() === firebaseProjectInfo.bootstrappedAdminEmail;
+    const isAdminEmail = firebaseProjectInfo.bootstrappedAdminEmails.includes(
+      actorEmail.toLowerCase()
+    );
 
     try {
       const baseRef = collection(db, 'organizations', orgId, 'members');
@@ -425,8 +444,9 @@ export const firestoreService = {
     actorEmail: string
   ): Promise<InvitationRecord[]> {
     const path = `organizations/${orgId}/invitations`;
-    const isAdminEmail =
-      actorEmail.toLowerCase() === firebaseProjectInfo.bootstrappedAdminEmail;
+    const isAdminEmail = firebaseProjectInfo.bootstrappedAdminEmails.includes(
+      actorEmail.toLowerCase()
+    );
 
     try {
       const baseRef = collection(db, 'organizations', orgId, 'invitations');
@@ -458,24 +478,25 @@ export const firestoreService = {
     try {
       const q = query(
         collectionGroup(db, 'invitations'),
-        where('inviteeEmail', '==', email.toLowerCase()),
-        where('status', '==', 'pending')
+        where('inviteeEmail', '==', email.toLowerCase())
       );
       const snap = await getDocs(q);
-      return snap.docs.map((d) => {
-        const data = d.data();
-        const roleKey = data.roleKey as SystemRoleKey;
-        return {
-          id: String(data.id),
-          orgId: String(data.orgId),
-          inviteeEmail: String(data.inviteeEmail),
-          roleKey,
-          roleName: getRoleMeta(roleKey).name,
-          status: 'pending',
-          invitedBy: String(data.invitedBy),
-          createdAt: formatTimestamp(data.createdAt),
-        };
-      });
+      return snap.docs
+        .map((d) => {
+          const data = d.data();
+          const roleKey = data.roleKey as SystemRoleKey;
+          return {
+            id: String(data.id),
+            orgId: String(data.orgId),
+            inviteeEmail: String(data.inviteeEmail),
+            roleKey,
+            roleName: getRoleMeta(roleKey).name,
+            status: data.status as 'pending' | 'accepted' | 'revoked',
+            invitedBy: String(data.invitedBy),
+            createdAt: formatTimestamp(data.createdAt),
+          };
+        })
+        .filter((inv) => inv.status === 'pending');
     } catch (err) {
       handleFirestoreError(err, OperationType.LIST, path);
     }
@@ -674,28 +695,31 @@ export const firestoreService = {
     actorEmail: string
   ): Promise<AuditLogRecord[]> {
     const path = `organizations/${orgId}/auditLogs`;
-    const isAdminEmail =
-      actorEmail.toLowerCase() === firebaseProjectInfo.bootstrappedAdminEmail;
+    const isAdminEmail = firebaseProjectInfo.bootstrappedAdminEmails.includes(
+      actorEmail.toLowerCase()
+    );
 
     try {
       const baseRef = collection(db, 'organizations', orgId, 'auditLogs');
       const q = isAdminEmail
         ? query(baseRef, orderBy('createdAt', 'desc'))
-        : query(baseRef, where('actorUid', '==', actorUid), orderBy('createdAt', 'desc'));
+        : query(baseRef, where('actorUid', '==', actorUid));
       const snap = await getDocs(q);
-      return snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: String(data.id),
-          orgId: String(data.orgId),
-          actorUid: String(data.actorUid),
-          action: String(data.action),
-          resourceType: String(data.resourceType),
-          resourceId: String(data.resourceId),
-          summary: String(data.summary),
-          createdAt: formatTimestamp(data.createdAt),
-        };
-      });
+      return snap.docs
+        .map((d) => {
+          const data = d.data();
+          return {
+            id: String(data.id),
+            orgId: String(data.orgId),
+            actorUid: String(data.actorUid),
+            action: String(data.action),
+            resourceType: String(data.resourceType),
+            resourceId: String(data.resourceId),
+            summary: String(data.summary),
+            createdAt: formatTimestamp(data.createdAt),
+          };
+        })
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     } catch (err) {
       handleFirestoreError(err, OperationType.LIST, path);
     }

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.errors import AuthenticationError, ServiceUnavailableError, register_exception_handlers
 from app.core.logging import configure_logging, get_logger, request_id_ctx
-from app.core.security import verify_supabase_jwt
+from app.core.security import verify_firebase_id_token
 from app.modules.auth.router import router as auth_router
 from app.modules.health.router import router as health_router
 from app.modules.organizations.router import router as org_router
@@ -25,8 +25,8 @@ async def lifespan(_: FastAPI):
         extra={
             "extra_data": {
                 "env": settings.app_env,
+                "firebase_configured": settings.firebase_configured,
                 "database_configured": settings.database_configured,
-                "supabase_configured": settings.supabase_configured,
             }
         },
     )
@@ -38,7 +38,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         version="0.1.0",
-        description="VisionX AI — Phase 1 Foundation API (Auth, Organizations, RBAC, Audit)",
+        description="VisionX AI — Phase 1 Foundation API (Firebase Auth, RBAC, Worker Boundary)",
         lifespan=lifespan,
     )
 
@@ -77,7 +77,7 @@ def create_app() -> FastAPI:
             await websocket.close(code=4401, reason="Authentication token required")
             return
         try:
-            claims = verify_supabase_jwt(token)
+            claims = verify_firebase_id_token(token)
         except (AuthenticationError, ServiceUnavailableError) as exc:
             await websocket.close(code=4401, reason=exc.message)
             return

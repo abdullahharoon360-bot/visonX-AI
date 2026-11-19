@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings loaded from environment variables.
 
-    Never hardcode credentials or service-role secrets here.
+    Never hardcode credentials or API keys here.
     """
 
     model_config = SettingsConfigDict(
@@ -25,14 +25,15 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO")
     cors_origins: str = Field(default="http://localhost:3000")
 
+    firebase_project_id: str = Field(default="smart-weaver-qpjks")
+    firestore_database_id: str = Field(
+        default="ai-studio-visionxai-d2ce5f78-219b-4ec2-ab28-c4a067dcc778"
+    )
     database_url: str = Field(default="")
-    supabase_url: str = Field(default="")
-    supabase_anon_key: str = Field(default="")
-    supabase_service_role_key: str = Field(default="")
-    supabase_jwt_secret: str = Field(default="")
 
     object_storage_driver: str = Field(default="local")
     object_storage_local_dir: str = Field(default="./storage")
+    gemini_api_key: str = Field(default="")
 
     @field_validator("app_env")
     @classmethod
@@ -48,11 +49,9 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     @property
-    def supabase_configured(self) -> bool:
+    def firebase_configured(self) -> bool:
         return bool(
-            self.supabase_url
-            and "YOUR_PROJECT_REF" not in self.supabase_url
-            and (self.supabase_jwt_secret or self.supabase_url.startswith("https://"))
+            self.firebase_project_id and self.firebase_project_id != "remixed-project-id"
         )
 
     @property

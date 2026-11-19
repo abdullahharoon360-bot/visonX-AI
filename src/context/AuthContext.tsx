@@ -53,6 +53,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
   const [syncError, setSyncError] = React.useState<string | null>(null);
 
+  const activeOrgIdRef = React.useRef(activeOrgId);
+  activeOrgIdRef.current = activeOrgId;
+
   const loadUserWorkspace = React.useCallback(async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) {
@@ -82,7 +85,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSyncError(null);
 
       if (userMemberships.length > 0) {
-        const storedMatches = userMemberships.some((m) => m.organization_id === activeOrgId);
+        const currentSelectedOrg = activeOrgIdRef.current;
+        const storedMatches = userMemberships.some((m) => m.organization_id === currentSelectedOrg);
         if (!storedMatches) {
           const fallbackOrg = userMemberships[0].organization_id;
           setActiveOrgIdState(fallbackOrg);
@@ -99,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [activeOrgId]);
+  }, []);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, () => {
@@ -132,7 +136,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     await signInWithPopup(auth, googleProvider);
-    await loadUserWorkspace();
   };
 
   const signOut = async () => {

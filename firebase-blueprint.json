@@ -5,38 +5,13 @@
       "description": "Non-PII operator profile visible to authenticated organization members.",
       "type": "object",
       "properties": {
-        "uid": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "displayName": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 120
-        },
-        "jobTitle": {
-          "type": "string",
-          "minLength": 0,
-          "maxLength": 120
-        },
-        "photoURL": {
-          "type": "string",
-          "minLength": 0,
-          "maxLength": 500
-        },
-        "isActive": {
-          "type": "boolean"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
+        "uid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "jobTitle": { "type": "string", "minLength": 0, "maxLength": 120 },
+        "photoURL": { "type": "string", "minLength": 0, "maxLength": 500 },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "displayName", "jobTitle", "isActive", "createdAt", "updatedAt"]
     },
@@ -45,30 +20,11 @@
       "description": "Isolated PII record containing operator email and security session metadata.",
       "type": "object",
       "properties": {
-        "uid": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "minLength": 3,
-          "maxLength": 255
-        },
-        "lastLoginAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
+        "uid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "minLength": 3, "maxLength": 255 },
+        "lastLoginAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "lastLoginAt", "createdAt", "updatedAt"]
     },
@@ -77,46 +33,14 @@
       "description": "Multi-tenant security workspace organization.",
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "name": {
-          "type": "string",
-          "minLength": 2,
-          "maxLength": 120
-        },
-        "slug": {
-          "type": "string",
-          "pattern": "^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$",
-          "minLength": 3,
-          "maxLength": 64
-        },
-        "industry": {
-          "type": "string",
-          "minLength": 2,
-          "maxLength": 120
-        },
-        "status": {
-          "type": "string",
-          "enum": ["active", "suspended", "archived"]
-        },
-        "ownerUid": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$", "minLength": 3, "maxLength": 64 },
+        "industry": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "status": { "type": "string", "enum": ["active", "suspended", "archived"] },
+        "ownerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "name", "slug", "industry", "status", "ownerUid", "createdAt", "updatedAt"]
     },
@@ -125,51 +49,15 @@
       "description": "RBAC membership binding an authenticated user to an organization with a role.",
       "type": "object",
       "properties": {
-        "orgId": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "userId": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "displayName": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 120
-        },
-        "roleKey": {
-          "type": "string",
-          "enum": ["super_admin", "admin", "security_analyst", "operator", "viewer"]
-        },
-        "status": {
-          "type": "string",
-          "enum": ["active", "suspended"]
-        },
-        "invitedBy": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "invitationId": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "joinedAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "userId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "roleKey": { "type": "string", "enum": ["super_admin", "admin", "security_analyst", "operator", "viewer"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "invitedBy": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "invitationId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "joinedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["orgId", "userId", "displayName", "roleKey", "status", "invitedBy", "joinedAt", "updatedAt"]
     },
@@ -178,46 +66,14 @@
       "description": "Email-scoped invitation granting organization access upon Google login.",
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "orgId": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "inviteeEmail": {
-          "type": "string",
-          "format": "email",
-          "minLength": 5,
-          "maxLength": 255
-        },
-        "roleKey": {
-          "type": "string",
-          "enum": ["admin", "security_analyst", "operator", "viewer"]
-        },
-        "status": {
-          "type": "string",
-          "enum": ["pending", "accepted", "revoked"]
-        },
-        "invitedBy": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "inviteeEmail": { "type": "string", "format": "email", "minLength": 5, "maxLength": 255 },
+        "roleKey": { "type": "string", "enum": ["admin", "security_analyst", "operator", "viewer"] },
+        "status": { "type": "string", "enum": ["pending", "accepted", "revoked"] },
+        "invitedBy": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "orgId", "inviteeEmail", "roleKey", "status", "invitedBy", "createdAt", "updatedAt"]
     },
@@ -226,31 +82,12 @@
       "description": "Organization-level security policy and retention configuration.",
       "type": "object",
       "properties": {
-        "orgId": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "sessionTimeoutMinutes": {
-          "type": "integer"
-        },
-        "requireMfaForPrivileged": {
-          "type": "boolean"
-        },
-        "retentionDays": {
-          "type": "integer"
-        },
-        "updatedBy": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "sessionTimeoutMinutes": { "type": "integer" },
+        "requireMfaForPrivileged": { "type": "boolean" },
+        "retentionDays": { "type": "integer" },
+        "updatedBy": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["orgId", "sessionTimeoutMinutes", "requireMfaForPrivileged", "retentionDays", "updatedBy", "updatedAt"]
     },
@@ -259,50 +96,282 @@
       "description": "Immutable append-only audit trail for organization governance actions.",
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "orgId": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "actorUid": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_\\-]+$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "action": {
-          "type": "string",
-          "minLength": 2,
-          "maxLength": 120
-        },
-        "resourceType": {
-          "type": "string",
-          "minLength": 2,
-          "maxLength": 80
-        },
-        "resourceId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "summary": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 300
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        }
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "actorUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "action": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "resourceType": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "resourceId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "orgId", "actorUid", "action", "resourceType", "resourceId", "summary", "createdAt"]
+    },
+    "Camera": {
+      "title": "Camera",
+      "description": "Registered surveillance camera endpoint with masked stream URI and health telemetry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "zone": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "location": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "streamType": { "type": "string", "enum": ["webcam", "rtsp", "onvif", "http_snapshot"] },
+        "endpointMasked": { "type": "string", "minLength": 3, "maxLength": 255 },
+        "status": { "type": "string", "enum": ["active", "offline", "maintenance"] },
+        "resolution": { "type": "string", "minLength": 3, "maxLength": 32 },
+        "targetFps": { "type": "integer" },
+        "lastLatencyMs": { "type": "integer" },
+        "lastCheckedAt": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "name", "zone", "location", "streamType", "endpointMasked", "status", "resolution", "targetFps", "createdAt", "updatedAt"]
+    },
+    "VisionDetection": {
+      "title": "VisionDetection",
+      "description": "Computer vision frame inference output with bounding-box coordinates and counts.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "cameraId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "cameraName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "sourceType": { "type": "string", "enum": ["webcam", "upload", "camera_snapshot"] },
+        "peopleCount": { "type": "integer" },
+        "vehicleCount": { "type": "integer" },
+        "anomalyCount": { "type": "integer" },
+        "maxConfidence": { "type": "number" },
+        "inferenceMs": { "type": "integer" },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 600 },
+        "detections": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "cameraId", "cameraName", "sourceType", "peopleCount", "vehicleCount", "anomalyCount", "maxConfidence", "inferenceMs", "summary", "detections", "createdAt"]
+    },
+    "VideoJob": {
+      "title": "VideoJob",
+      "description": "Video intelligence investigation job with keyframe metrics, timeline markers, and ALPR hints.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "fileName": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "fileSizeBytes": { "type": "integer" },
+        "durationSec": { "type": "number" },
+        "resolution": { "type": "string", "minLength": 3, "maxLength": 32 },
+        "framesSampled": { "type": "integer" },
+        "avgBrightness": { "type": "number" },
+        "avgSharpness": { "type": "number" },
+        "status": { "type": "string", "enum": ["completed", "failed"] },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "detectedPlates": { "type": "array" },
+        "timeline": { "type": "array" },
+        "inferenceMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "fileName", "fileSizeBytes", "durationSec", "resolution", "framesSampled", "avgBrightness", "avgSharpness", "status", "summary", "detectedPlates", "timeline", "inferenceMs", "createdAt"]
+    },
+    "BiometricIdentity": {
+      "title": "BiometricIdentity",
+      "description": "Enrolled identity profile with cryptographic SHA-256 template digests for face, voice, and fingerprint.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "fullName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "employeeCode": { "type": "string", "minLength": 2, "maxLength": 64 },
+        "department": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "clearanceLevel": { "type": "string", "enum": ["standard", "elevated", "restricted", "executive"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "faceEnrolled": { "type": "boolean" },
+        "voiceEnrolled": { "type": "boolean" },
+        "fingerprintEnrolled": { "type": "boolean" },
+        "faceDescriptorDigest": { "type": "string", "maxLength": 128 },
+        "voiceDescriptorDigest": { "type": "string", "maxLength": 128 },
+        "fingerprintDescriptorDigest": { "type": "string", "maxLength": 128 },
+        "enrollmentNotes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "fullName", "employeeCode", "department", "clearanceLevel", "status", "faceEnrolled", "voiceEnrolled", "fingerprintEnrolled", "faceDescriptorDigest", "voiceDescriptorDigest", "fingerprintDescriptorDigest", "enrollmentNotes", "createdAt", "updatedAt"]
+    },
+    "VerificationLog": {
+      "title": "VerificationLog",
+      "description": "Multimodal biometric checkpoint verification log with fused confidence and outcome.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "identityId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "identityName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "checkpointName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "modalitiesUsed": { "type": "array" },
+        "faceScore": { "type": "number" },
+        "voiceScore": { "type": "number" },
+        "fingerprintScore": { "type": "number" },
+        "fusedScore": { "type": "number" },
+        "livenessPassed": { "type": "boolean" },
+        "outcome": { "type": "string", "enum": ["verified", "failed", "inconclusive"] },
+        "rationale": { "type": "string", "minLength": 1, "maxLength": 600 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "identityId", "identityName", "checkpointName", "modalitiesUsed", "fusedScore", "livenessPassed", "outcome", "rationale", "createdAt"]
+    },
+    "SecurityEvent": {
+      "title": "SecurityEvent",
+      "description": "Correlated security event emitted by vision, video, biometric, or manual checkpoint monitoring.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "sourceModule": { "type": "string", "enum": ["vision", "video", "identity", "camera", "manual"] },
+        "eventType": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "cameraId": { "type": "string", "maxLength": 128 },
+        "zone": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "title": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "detail": { "type": "string", "minLength": 2, "maxLength": 600 },
+        "acknowledged": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "sourceModule", "eventType", "severity", "cameraId", "zone", "title", "detail", "acknowledged", "createdAt"]
+    },
+    "RiskAssessment": {
+      "title": "RiskAssessment",
+      "description": "Deterministic weighted risk score calculation with contributing factors.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "targetLabel": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "zone": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "riskScore": { "type": "number" },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "factors": { "type": "array" },
+        "recommendation": { "type": "string", "minLength": 2, "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "targetLabel", "zone", "riskScore", "severity", "factors", "recommendation", "createdAt"]
+    },
+    "Incident": {
+      "title": "Incident",
+      "description": "Managed security incident lifecycle record with triage, ownership, and resolution notes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "title": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "description": { "type": "string", "minLength": 3, "maxLength": 1200 },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "status": { "type": "string", "enum": ["open", "investigating", "contained", "resolved", "closed"] },
+        "zone": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "linkedCameraId": { "type": "string", "maxLength": 128 },
+        "linkedEventId": { "type": "string", "maxLength": 128 },
+        "riskScore": { "type": "number" },
+        "assignedToUid": { "type": "string", "maxLength": 128 },
+        "resolutionNotes": { "type": "string", "maxLength": 1200 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "title", "description", "severity", "status", "zone", "linkedCameraId", "linkedEventId", "riskScore", "assignedToUid", "resolutionNotes", "createdAt", "updatedAt"]
+    },
+    "AnalystSession": {
+      "title": "AnalystSession",
+      "description": "Persisted AI Security Analyst query and evidence-grounded recommendation.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "prompt": { "type": "string", "minLength": 2, "maxLength": 1000 },
+        "responseText": { "type": "string", "minLength": 1, "maxLength": 8000 },
+        "contextSnapshot": { "type": "string", "maxLength": 1000 },
+        "modelName": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "prompt", "responseText", "contextSnapshot", "modelName", "createdAt"]
+    },
+    "EvidenceItem": {
+      "title": "EvidenceItem",
+      "description": "Digital evidence item with SHA-256 integrity hash and chain-of-custody state.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "caseNumber": { "type": "string", "minLength": 2, "maxLength": 64 },
+        "title": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "sourceType": { "type": "string", "enum": ["image_frame", "video_clip", "biometric_log", "incident_bundle"] },
+        "fileName": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "fileSizeBytes": { "type": "integer" },
+        "sha256Digest": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "linkedIncidentId": { "type": "string", "maxLength": 128 },
+        "custodyStatus": { "type": "string", "enum": ["sealed", "under_review", "exported"] },
+        "custodyNotes": { "type": "string", "maxLength": 600 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "caseNumber", "title", "sourceType", "fileName", "fileSizeBytes", "sha256Digest", "linkedIncidentId", "custodyStatus", "custodyNotes", "createdAt", "updatedAt"]
+    },
+    "BenchmarkRun": {
+      "title": "BenchmarkRun",
+      "description": "Biometric and computer vision evaluation metrics snapshot (FAR, FRR, TAR, EER, AUC).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "runName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "datasetSource": { "type": "string", "enum": ["live_verifications", "imported_scores"] },
+        "sampleCount": { "type": "integer" },
+        "threshold": { "type": "number" },
+        "far": { "type": "number" },
+        "frr": { "type": "number" },
+        "tar": { "type": "number" },
+        "eer": { "type": "number" },
+        "auc": { "type": "number" },
+        "avgLatencyMs": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "runName", "datasetSource", "sampleCount", "threshold", "far", "frr", "tar", "eer", "auc", "avgLatencyMs", "createdAt"]
+    },
+    "SecurityReport": {
+      "title": "SecurityReport",
+      "description": "Generated executive, compliance, or forensic report snapshot.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "orgOwnerUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "createdByUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$", "minLength": 1, "maxLength": 128 },
+        "title": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "reportType": { "type": "string", "enum": ["executive", "compliance", "forensic", "biometric"] },
+        "summary": { "type": "string", "minLength": 2, "maxLength": 2000 },
+        "metricsSnapshot": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orgId", "orgOwnerUid", "createdByUid", "title", "reportType", "summary", "metricsSnapshot", "createdAt"]
     }
   },
   "firestore": {
@@ -333,6 +402,54 @@
     "/organizations/{orgId}/auditLogs/{logId}": {
       "schema": { "$ref": "#/entities/AuditLog" },
       "description": "Immutable append-only audit logs scoped per organization."
+    },
+    "/organizations/{orgId}/cameras/{cameraId}": {
+      "schema": { "$ref": "#/entities/Camera" },
+      "description": "Registered camera endpoints and connectivity telemetry."
+    },
+    "/organizations/{orgId}/visionDetections/{detectionId}": {
+      "schema": { "$ref": "#/entities/VisionDetection" },
+      "description": "Computer vision frame inference logs and bounding-box results."
+    },
+    "/organizations/{orgId}/videoJobs/{jobId}": {
+      "schema": { "$ref": "#/entities/VideoJob" },
+      "description": "Video intelligence analysis jobs and frame quality metrics."
+    },
+    "/organizations/{orgId}/biometricIdentities/{identityId}": {
+      "schema": { "$ref": "#/entities/BiometricIdentity" },
+      "description": "Enrolled multimodal biometric identity profiles."
+    },
+    "/organizations/{orgId}/verificationLogs/{logId}": {
+      "schema": { "$ref": "#/entities/VerificationLog" },
+      "description": "Multimodal biometric verification attempt logs."
+    },
+    "/organizations/{orgId}/securityEvents/{eventId}": {
+      "schema": { "$ref": "#/entities/SecurityEvent" },
+      "description": "Correlated security event stream across vision, video, and identity."
+    },
+    "/organizations/{orgId}/riskAssessments/{assessmentId}": {
+      "schema": { "$ref": "#/entities/RiskAssessment" },
+      "description": "Deterministic weighted risk scoring records."
+    },
+    "/organizations/{orgId}/incidents/{incidentId}": {
+      "schema": { "$ref": "#/entities/Incident" },
+      "description": "Managed security incident lifecycle records."
+    },
+    "/organizations/{orgId}/analystSessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/AnalystSession" },
+      "description": "Persisted AI Security Analyst investigation queries."
+    },
+    "/organizations/{orgId}/evidenceItems/{evidenceId}": {
+      "schema": { "$ref": "#/entities/EvidenceItem" },
+      "description": "Digital evidence records with SHA-256 integrity digests."
+    },
+    "/organizations/{orgId}/benchmarkRuns/{runId}": {
+      "schema": { "$ref": "#/entities/BenchmarkRun" },
+      "description": "Biometric and vision evaluation benchmark snapshots."
+    },
+    "/organizations/{orgId}/securityReports/{reportId}": {
+      "schema": { "$ref": "#/entities/SecurityReport" },
+      "description": "Generated cross-module security report snapshots."
     }
   }
 }

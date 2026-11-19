@@ -24,18 +24,21 @@ def readiness() -> JSONResponse:
     settings = get_settings()
     db_ok = False
     db_error = None
-    try:
-        db_ok = check_database_health()
-    except Exception as exc:  # noqa: BLE001
-        db_error = str(exc)
+    if settings.database_configured:
+        try:
+            db_ok = check_database_health()
+        except Exception as exc:  # noqa: BLE001
+            db_error = str(exc)
 
-    ready = db_ok and settings.supabase_configured
+    ready = settings.firebase_configured
     payload = {
         "status": "ready" if ready else "degraded",
         "checks": {
+            "firebase_configured": settings.firebase_configured,
+            "firebase_project_id": settings.firebase_project_id,
+            "firestore_database_id": settings.firestore_database_id,
             "database_configured": settings.database_configured,
             "database_connected": db_ok,
-            "supabase_configured": settings.supabase_configured,
         },
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

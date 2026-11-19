@@ -14,7 +14,16 @@ import { LoginPage } from '@/src/pages/auth/LoginPage';
 import { CommandCenterPage } from '@/src/pages/CommandCenterPage';
 import { AdministrationPage } from '@/src/pages/AdministrationPage';
 import { ProfilePage } from '@/src/pages/ProfilePage';
-import { PlannedModulePage } from '@/src/pages/PlannedModulePage';
+import { CamerasPage } from '@/src/pages/CamerasPage';
+import { LiveMonitoringPage } from '@/src/pages/LiveMonitoringPage';
+import { VideoIntelligencePage } from '@/src/pages/VideoIntelligencePage';
+import { IdentityPage } from '@/src/pages/IdentityPage';
+import { ThreatIntelligencePage } from '@/src/pages/ThreatIntelligencePage';
+import { IncidentsPage } from '@/src/pages/IncidentsPage';
+import { AiAnalystPage } from '@/src/pages/AiAnalystPage';
+import { InvestigationsPage } from '@/src/pages/InvestigationsPage';
+import { ResearchLabPage } from '@/src/pages/ResearchLabPage';
+import { ReportsPage } from '@/src/pages/ReportsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,12 +61,92 @@ export default function App() {
               <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
               <Route path="/reset-password" element={<Navigate to="/login" replace />} />
 
-              {/* Protected Workspace Routes */}
+              {/* Protected Workspace Routes (All Phases 1–8) */}
               <Route
                 path="/command-center"
                 element={
                   <ProtectedWorkspace>
                     <CommandCenterPage />
+                  </ProtectedWorkspace>
+                }
+              />
+              <Route
+                path="/live-monitoring"
+                element={
+                  <ProtectedWorkspace>
+                    <LiveMonitoringPage />
+                  </ProtectedWorkspace>
+                }
+              />
+              <Route
+                path="/cameras"
+                element={
+                  <ProtectedWorkspace>
+                    <CamerasPage />
+                  </ProtectedWorkspace>
+                }
+              />
+              <Route
+                path="/video-intelligence"
+                element={
+                  <ProtectedWorkspace>
+                    <VideoIntelligencePage />
+                  </ProtectedWorkspace>
+                }
+              />
+              <Route
+                path="/identity"
+                element={
+                  <ProtectedWorkspace>
+                    <IdentityPage />
+                  </ProtectedWorkspace>
+                }
+              />
+              <Route
+                path="/incidents"
+                element={
+                  <ProtectedWorkspace>
+                    <IncidentsPage />
+                  </ProtectedWorkspace>
+                }
+              />
+              <Route
+                path="/threat-intelligence"
+                element={
+                  <ProtectedWorkspace>
+                    <ThreatIntelligencePage />
+                  </ProtectedWorkspace>
+                }
+              />
+              <Route
+                path="/ai-analyst"
+                element={
+                  <ProtectedWorkspace>
+                    <AiAnalystPage />
+                  </ProtectedWorkspace>
+                }
+              />
+              <Route
+                path="/investigations"
+                element={
+                  <ProtectedWorkspace>
+                    <InvestigationsPage />
+                  </ProtectedWorkspace>
+                }
+              />
+              <Route
+                path="/research-lab"
+                element={
+                  <ProtectedWorkspace>
+                    <ResearchLabPage />
+                  </ProtectedWorkspace>
+                }
+              />
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedWorkspace>
+                    <ReportsPage />
                   </ProtectedWorkspace>
                 }
               />
@@ -74,88 +163,6 @@ export default function App() {
                 element={
                   <ProtectedWorkspace>
                     <ProfilePage />
-                  </ProtectedWorkspace>
-                }
-              />
-
-              {/* Phase 2–8 Reserved Module Boundaries */}
-              <Route
-                path="/live-monitoring"
-                element={
-                  <ProtectedWorkspace>
-                    <PlannedModulePage moduleId="live-monitoring" />
-                  </ProtectedWorkspace>
-                }
-              />
-              <Route
-                path="/cameras"
-                element={
-                  <ProtectedWorkspace>
-                    <PlannedModulePage moduleId="cameras" />
-                  </ProtectedWorkspace>
-                }
-              />
-              <Route
-                path="/video-intelligence"
-                element={
-                  <ProtectedWorkspace>
-                    <PlannedModulePage moduleId="video-intelligence" />
-                  </ProtectedWorkspace>
-                }
-              />
-              <Route
-                path="/identity"
-                element={
-                  <ProtectedWorkspace>
-                    <PlannedModulePage moduleId="identity" />
-                  </ProtectedWorkspace>
-                }
-              />
-              <Route
-                path="/incidents"
-                element={
-                  <ProtectedWorkspace>
-                    <PlannedModulePage moduleId="incidents" />
-                  </ProtectedWorkspace>
-                }
-              />
-              <Route
-                path="/threat-intelligence"
-                element={
-                  <ProtectedWorkspace>
-                    <PlannedModulePage moduleId="threat-intelligence" />
-                  </ProtectedWorkspace>
-                }
-              />
-              <Route
-                path="/ai-analyst"
-                element={
-                  <ProtectedWorkspace>
-                    <PlannedModulePage moduleId="ai-analyst" />
-                  </ProtectedWorkspace>
-                }
-              />
-              <Route
-                path="/investigations"
-                element={
-                  <ProtectedWorkspace>
-                    <PlannedModulePage moduleId="investigations" />
-                  </ProtectedWorkspace>
-                }
-              />
-              <Route
-                path="/research-lab"
-                element={
-                  <ProtectedWorkspace>
-                    <PlannedModulePage moduleId="research-lab" />
-                  </ProtectedWorkspace>
-                }
-              />
-              <Route
-                path="/reports"
-                element={
-                  <ProtectedWorkspace>
-                    <PlannedModulePage moduleId="reports" />
                   </ProtectedWorkspace>
                 }
               />

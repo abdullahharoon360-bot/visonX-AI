@@ -19,6 +19,10 @@ export const firebaseProjectInfo = {
   databaseId: firebaseConfig.firestoreDatabaseId,
   authDomain: firebaseConfig.authDomain,
   bootstrappedAdminEmail: 'abdullahmohamedharoon8@gmail.com',
+  bootstrappedAdminEmails: [
+    'abdullahmohamedharoon8@gmail.com',
+    'abdullahharoon360@gmail.com',
+  ],
 };
 
 export async function testFirestoreConnection(): Promise<{

@@ -38,6 +38,7 @@ export interface OrganizationMembership {
   organization_name: string;
   organization_slug: string;
   organization_industry: string;
+  organization_owner_uid: string;
   role_key: SystemRoleKey;
   role_name: string;
   hierarchy_level: number;
